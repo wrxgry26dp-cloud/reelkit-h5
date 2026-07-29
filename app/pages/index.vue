@@ -1,29 +1,30 @@
 <script setup lang="ts">
 const client = useSupabaseClient()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
-const { data: banners } = await useAsyncData('banners', async () => {
-  const { data, error } = await client.from('banners').select('*').eq('is_active', true).order('sort_order')
-  if (error) throw error
-  return data || []
-}, { server: false, default: () => [] })
+const { data: banners, refresh: refreshBanners } = await useAsyncData(
+  () => `banners-${locale.value}`,
+  () => fetchHomeBannersByLocale(client, locale.value),
+  { server: false, default: () => [], watch: [locale] },
+)
 
-const { data: sections, pending } = await useAsyncData('sections', async () => {
-  const { data: secs } = await client.from('home_sections').select('*').eq('is_active', true).order('sort_order')
-  const result = []
-  for (const section of secs || []) {
-    const { data: items } = await client
-      .from('home_section_items')
-      .select('sort_order, drama:dramas(*)')
-      .eq('section_id', section.id)
-      .order('sort_order')
-    const dramas = (items || []).map((i: any) => i.drama).filter((d: any) => d && d.status === 'published')
-    result.push({ ...section, dramas })
-  }
-  return result
-}, { server: false, default: () => [] })
+const { data: sections, pending, refresh: refreshSections } = await useAsyncData(
+  () => `sections-${locale.value}`,
+  () => fetchHomeSectionsByLocale(client, locale.value),
+  { server: false, default: () => [], watch: [locale] },
+)
+
+watch(locale, () => {
+  refreshBanners()
+  refreshSections()
+})
 
 const hero = computed(() => banners.value?.[0])
+
+function localizedSectionTitle(section: any) {
+  const key = sectionTitleKey(section?.slug)
+  return key ? t(key) : section?.title
+}
 </script>
 
 <template>
@@ -38,10 +39,11 @@ const hero = computed(() => banners.value?.[0])
     </section>
 
     <p v-if="pending" class="muted" style="padding:0 16px;">Loading...</p>
+    <p v-else-if="!sections?.length && !banners?.length" class="muted" style="padding:0 16px;">{{ t('noContentForLocale') }}</p>
     <section v-for="section in sections" :key="section.id" class="section">
       <div class="section-head">
-        <h2>{{ section.title }}</h2>
-        <span class="muted">{{ t('viewAll') }}</span>
+        <h2>{{ localizedSectionTitle(section) }}</h2>
+        <NuxtLink class="muted" to="/categories">{{ t('viewAll') }}</NuxtLink>
       </div>
       <div class="rail">
         <NuxtLink v-for="d in section.dramas" :key="d.id" :to="`/drama/${d.id}`">
@@ -54,4 +56,3 @@ const hero = computed(() => banners.value?.[0])
     </section>
   </div>
 </template>
-
