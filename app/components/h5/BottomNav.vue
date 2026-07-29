@@ -3,17 +3,19 @@ const props = defineProps<{
   active?: string
 }>()
 
-const tabs = [
-  { key: 'home', label: '首页', to: '/' },
-  { key: 'theater', label: '剧场', to: '/theater' },
-  { key: 'mall', label: '商城', to: '/theater' },
-  { key: 'earn', label: '赚钱', to: '/theater', badge: '赚' },
-  { key: 'mine', label: '我的', to: '/profile' },
-]
+const { t } = useI18n()
+
+const tabs = computed(() => [
+  { key: 'home', label: t('tabHome'), to: '/' },
+  { key: 'theater', label: t('tabTheater'), to: '/theater' },
+  { key: 'mall', label: t('tabMall'), to: '/theater' },
+  { key: 'earn', label: t('tabEarn'), to: '/theater', badge: t('earnBadge') },
+  { key: 'mine', label: t('tabMine'), to: '/profile' },
+])
 </script>
 
 <template>
-  <nav class="h5-tabbar" aria-label="底部导航">
+  <nav class="h5-tabbar" :aria-label="t('tabHome')">
     <NuxtLink
       v-for="tab in tabs"
       :key="tab.key"
@@ -23,7 +25,6 @@ const tabs = [
     >
       <span class="label-wrap">
         <span v-if="tab.badge" class="badge">{{ tab.badge }}</span>
-        <span v-if="tab.dot" class="dot" />
         <span class="label">{{ tab.label }}</span>
       </span>
     </NuxtLink>
@@ -54,7 +55,7 @@ const tabs = [
   justify-content: center;
   min-width: 0;
   color: rgba(255, 255, 255, 0.45);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   text-decoration: none;
 }
@@ -92,15 +93,5 @@ const tabs = [
   text-align: center;
   line-height: 1.4;
   white-space: nowrap;
-}
-
-.dot {
-  position: absolute;
-  top: -2px;
-  right: -6px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #ff3b30;
 }
 </style>

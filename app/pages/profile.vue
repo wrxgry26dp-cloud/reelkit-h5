@@ -26,7 +26,10 @@ watch(user, () => refresh())
 <template>
   <div class="mine">
     <header class="head">
-      <h1>{{ t('personalCenter') }}</h1>
+      <div class="head-row">
+        <h1>{{ t('personalCenter') }}</h1>
+        <H5LangSwitch />
+      </div>
     </header>
 
     <template v-if="!user">
@@ -76,10 +79,17 @@ watch(user, () => refresh())
 }
 
 .head h1 {
-  margin: 0 0 20px;
+  margin: 0;
   font-size: 24px;
   font-weight: 800;
   line-height: 1.2;
+}
+.head-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
 .guest-card {

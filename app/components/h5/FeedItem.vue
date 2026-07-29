@@ -16,6 +16,7 @@ const emit = defineEmits<{
 const user = useSupabaseUser()
 const route = useRoute()
 const { showLogin } = useLoginModal()
+const { t, locale } = useI18n()
 const { isLiked, isFavorited, toggleLike, toggleFavorite, shareDrama } = useFeedActions()
 
 const videoRef = ref<HTMLVideoElement | null>(null)
@@ -36,7 +37,7 @@ const favorited = computed(() => isFavorited(props.item.dramaId))
 const isPaid = computed(() => !props.item.isFree)
 const priceLabel = computed(() => {
   const coins = props.item.coinPrice || 0
-  return coins > 0 ? `${coins} 金币解锁` : '解锁本集'
+  return coins > 0 ? t('unlockWithCoins', { n: coins }) : t('unlockEpisode')
 })
 
 const likeCount = computed(() => {
@@ -50,8 +51,13 @@ const collectCount = computed(() => {
 })
 
 function formatCount(n: number) {
-  if (n >= 10000) return `${(n / 10000).toFixed(1)}万`
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}千`
+  if (locale.value === 'ja') {
+    if (n >= 10000) return `${(n / 10000).toFixed(1)}万`
+    if (n >= 1000) return `${(n / 1000).toFixed(1)}千`
+    return String(n)
+  }
+  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`
   return String(n)
 }
 
@@ -72,13 +78,13 @@ function requireLogin(): boolean {
 function onToggleLike() {
   if (!requireLogin()) return
   const next = toggleLike(props.item.dramaId)
-  showToast(next ? '已点赞' : '已取消点赞')
+  showToast(next ? t('liked') : t('unliked'))
 }
 
 function onToggleFavorite() {
   if (!requireLogin()) return
   const next = toggleFavorite(props.item.dramaId)
-  showToast(next ? '已收藏' : '已取消收藏')
+  showToast(next ? t('favorited') : t('unfavorited'))
 }
 
 async function onShare() {
@@ -86,9 +92,9 @@ async function onShare() {
     title: props.item.dramaTitle,
     dramaId: props.item.dramaId,
   })
-  if (result === 'copied') showToast('链接已复制')
-  else if (result === 'shared') showToast('已分享')
-  else if (result === 'failed') showToast('分享失败')
+  if (result === 'copied') showToast(t('linkCopied'))
+  else if (result === 'shared') showToast(t('shared'))
+  else if (result === 'failed') showToast(t('shareFailed'))
 }
 
 async function playVideo(forceMuted = false) {
@@ -116,7 +122,7 @@ async function playVideo(forceMuted = false) {
     } catch (e) {
       isPlaying.value = false
       needsTap.value = true
-      playError.value = e instanceof Error ? e.message : '点击播放'
+      playError.value = e instanceof Error ? e.message : t('tapToPlay')
     }
   }
 }
@@ -223,7 +229,7 @@ function onLoadedData() {
 function onVideoError() {
   isPlaying.value = false
   needsTap.value = true
-  playError.value = '视频加载失败，点击重试'
+  playError.value = t('videoLoadFailed')
 }
 
 async function onTapPlay() {
@@ -297,7 +303,7 @@ onMounted(async () => {
       @click.stop="onTapPlay"
     >
       <span class="tap-icon">▶</span>
-      <span>{{ playError || '点击播放' }}</span>
+      <span>{{ playError || t('tapToPlay') }}</span>
     </button>
 
     <button
@@ -306,21 +312,21 @@ onMounted(async () => {
       type="button"
       @click.stop="toggleMute"
     >
-      {{ muted ? '静音' : '声音' }}
+      {{ muted ? t('mute') : t('sound') }}
     </button>
 
     <div v-if="paywalled" class="paywall">
       <div class="paywall-card">
-        <p class="paywall-title">试看结束</p>
-        <p class="paywall-desc">本集为付费内容，购买后可继续观看</p>
+        <p class="paywall-title">{{ t('previewEnded') }}</p>
+        <p class="paywall-desc">{{ t('previewPaidDesc') }}</p>
         <button class="buy-btn" type="button" @click.stop="onBuy">
           {{ priceLabel }}
         </button>
-        <p v-if="!user" class="paywall-tip">未登录将先跳转登录</p>
+        <p v-if="!user" class="paywall-tip">{{ t('loginFirstTip') }}</p>
       </div>
     </div>
 
-    <aside v-show="!paywalled" class="actions" aria-label="互动">
+    <aside v-show="!paywalled" class="actions" :aria-label="t('share')">
       <button type="button" class="action" @click.stop="onToggleLike">
         <span class="icon" :class="{ liked }">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.2-4.4-9.4-9A5.4 5.4 0 0 1 12 6.2 5.4 5.4 0 0 1 21.4 12C19.2 16.6 12 21 12 21z" fill="currentColor"/></svg>
@@ -337,7 +343,7 @@ onMounted(async () => {
         <span class="icon">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5l7 7-7 7M21 12H9M9 5H4v14h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </span>
-        <span>分享</span>
+        <span>{{ t('share') }}</span>
       </button>
     </aside>
 
@@ -351,18 +357,18 @@ onMounted(async () => {
 
       <div v-if="item.tags.length" class="tags">
         <span v-for="tag in item.tags.slice(0, 3)" :key="tag" class="tag">{{ tag }}</span>
-        <span v-if="isPaid" class="tag tag-paid">付费</span>
+        <span v-if="isPaid" class="tag tag-paid">{{ t('paidTag') }}</span>
       </div>
 
       <p class="desc" :class="{ open: expanded }" @click="expanded = !expanded">
-        第{{ item.episodeNumber }}集
+        {{ t('episodeN', { n: item.episodeNumber }) }}
         <template v-if="item.synopsis">｜{{ item.synopsis }}</template>
-        <span class="more">{{ expanded ? '收起' : '展开' }}</span>
+        <span class="more">{{ expanded ? t('collapse') : t('expand') }}</span>
       </p>
 
       <button class="series-bar" type="button" @click="emit('openSeries')">
         <span class="play">▶</span>
-        观看完整短剧 · 全{{ item.episodeCount }}集
+        {{ t('watchFullSeries', { n: item.episodeCount }) }}
         <span class="chev">›</span>
       </button>
 

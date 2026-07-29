@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { Drama } from '~/types/feed.types'
 
-const { fetchHomeSections } = useDramaFeed()
-const { locale } = useI18n()
+const { fetchHomeSections, fetchFeed } = useDramaFeed()
+const { locale, t } = useI18n()
 const dramas = ref<Drama[]>([])
 const loading = ref(true)
 
@@ -18,10 +18,9 @@ async function load() {
         map.set(item.drama.id, item.drama)
       }
     }
-    // Fallback: if sections empty for locale, still show published dramas via feed query path
     dramas.value = [...map.values()]
     if (!dramas.value.length) {
-      const feed = await useDramaFeed().fetchFeed()
+      const feed = await fetchFeed()
       dramas.value = feed.map((f) => ({
         id: f.dramaId,
         title: f.dramaTitle,
@@ -45,11 +44,16 @@ watch(locale, load)
 <template>
   <div class="theater">
     <header class="head">
-      <h1>剧场</h1>
-      <p>发现更多短剧</p>
+      <div class="head-row">
+        <div>
+          <h1>{{ t('theaterTitle') }}</h1>
+          <p>{{ t('theaterSubtitle') }}</p>
+        </div>
+        <H5LangSwitch />
+      </div>
     </header>
 
-    <div v-if="loading" class="hint">加载中…</div>
+    <div v-if="loading" class="hint">{{ t('loading') }}</div>
 
     <div v-else class="grid">
       <NuxtLink
@@ -61,12 +65,12 @@ watch(locale, load)
         <img v-if="drama.cover_url" :src="drama.cover_url" :alt="drama.title">
         <div class="info">
           <strong>{{ drama.title }}</strong>
-          <span>{{ (drama.tags || []).slice(0, 2).join(' · ') || '短剧' }}</span>
+          <span>{{ (drama.tags || []).slice(0, 2).join(' · ') || '—' }}</span>
         </div>
       </NuxtLink>
     </div>
 
-    <p v-if="!loading && !dramas.length" class="hint">暂无短剧</p>
+    <p v-if="!loading && !dramas.length" class="hint">{{ t('noDramas') }}</p>
 
     <H5BottomNav active="theater" />
   </div>
@@ -86,6 +90,7 @@ watch(locale, load)
 }
 .head h1 { margin: 0; font-size: 28px; }
 .head p { margin: 6px 0 20px; color: rgba(255, 255, 255, 0.55); }
+.head-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .hint { color: rgba(255, 255, 255, 0.5); }
 .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .card {

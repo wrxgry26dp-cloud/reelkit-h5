@@ -12,7 +12,7 @@ const emit = defineEmits<{
 const activeTab = ref<'recommend' | 'hot'>('recommend')
 const activeIndex = ref(0)
 const scrollerRef = ref<HTMLElement | null>(null)
-const { locale, setLocale, LOCALES } = useI18n()
+const { t } = useI18n()
 
 const visibleItems = computed(() => {
   if (activeTab.value === 'hot') {
@@ -85,14 +85,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="h5-feed">
     <header class="topbar">
-      <select
-        class="lang"
-        :value="locale"
-        aria-label="language"
-        @change="setLocale(($event.target as HTMLSelectElement).value as any)"
-      >
-        <option v-for="l in LOCALES" :key="l.code" :value="l.code">{{ l.code.toUpperCase() }}</option>
-      </select>
+      <H5LangSwitch />
       <div class="tabs" role="tablist">
         <button
           type="button"
@@ -100,7 +93,7 @@ onBeforeUnmount(() => {
           :class="{ active: activeTab === 'hot' }"
           @click="activeTab = 'hot'"
         >
-          Hot
+          {{ t('tabHot') }}
         </button>
         <button
           type="button"
@@ -108,10 +101,10 @@ onBeforeUnmount(() => {
           :class="{ active: activeTab === 'recommend' }"
           @click="activeTab = 'recommend'"
         >
-          For You
+          {{ t('tabForYou') }}
         </button>
       </div>
-      <NuxtLink class="icon-btn" to="/theater" aria-label="theater">Grid</NuxtLink>
+      <NuxtLink class="icon-btn" to="/theater" aria-label="theater">{{ t('tabGrid') }}</NuxtLink>
     </header>
 
     <div ref="scrollerRef" class="scroller">
@@ -130,7 +123,7 @@ onBeforeUnmount(() => {
       </div>
 
       <div v-if="!visibleItems.length" class="empty">
-        <p>暂无可播放短剧</p>
+        <p>{{ t('emptyFeed') }}</p>
       </div>
     </div>
 
@@ -175,16 +168,6 @@ onBeforeUnmount(() => {
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
-}
-.lang {
-  height: 32px;
-  border: 0;
-  border-radius: 8px;
-  background: rgba(255,255,255,.12);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 0 6px;
 }
 
 .tabs {
