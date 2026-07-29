@@ -1,58 +1,74 @@
 <script setup lang="ts">
-const client = useSupabaseClient()
-const { t, locale } = useI18n()
+import type { FeedItem } from '~/types/feed.types'
 
-const { data: banners, refresh: refreshBanners } = await useAsyncData(
-  () => `banners-${locale.value}`,
-  () => fetchHomeBannersByLocale(client, locale.value),
-  { server: false, default: () => [], watch: [locale] },
-)
+const { fetchFeed } = useDramaFeed()
+const { locale } = useI18n()
+const feed = ref<FeedItem[]>([])
+const loading = ref(true)
+const errorMsg = ref('')
 
-const { data: sections, pending, refresh: refreshSections } = await useAsyncData(
-  () => `sections-${locale.value}`,
-  () => fetchHomeSectionsByLocale(client, locale.value),
-  { server: false, default: () => [], watch: [locale] },
-)
-
-watch(locale, () => {
-  refreshBanners()
-  refreshSections()
+useHead({
+  title: 'ReelKit',
+  meta: [{ name: 'description', content: 'Vertical short drama feed' }],
+  link: [
+    {
+      rel: 'stylesheet',
+      href: 'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap',
+    },
+  ],
 })
 
-const hero = computed(() => banners.value?.[0])
+async function load() {
+  loading.value = true
+  errorMsg.value = ''
+  try {
+    feed.value = await fetchFeed()
+  } catch (e) {
+    errorMsg.value = e instanceof Error ? e.message : 'Load failed'
+  } finally {
+    loading.value = false
+  }
+}
 
-function localizedSectionTitle(section: any) {
-  const key = sectionTitleKey(section?.slug)
-  return key ? t(key) : section?.title
+onMounted(load)
+watch(locale, load)
+
+function openSeries(item: FeedItem) {
+  navigateTo(`/drama/${item.dramaId}`)
 }
 </script>
 
 <template>
   <div>
-    <p class="muted" style="padding:8px 20px 0;">{{ t('guestTip') }}</p>
-    <section class="hero">
-      <div style="text-align:center;">
-        <h1 class="hero-title">{{ hero?.title || 'ReelKit' }}</h1>
-        <NuxtLink v-if="hero?.drama_id" class="btn light" :to="`/drama/${hero.drama_id}`">{{ t('play') }}</NuxtLink>
-        <NuxtLink v-else class="btn light" to="/categories">{{ t('categories') }}</NuxtLink>
-      </div>
-    </section>
-
-    <p v-if="pending" class="muted" style="padding:0 16px;">Loading...</p>
-    <p v-else-if="!sections?.length && !banners?.length" class="muted" style="padding:0 16px;">{{ t('noContentForLocale') }}</p>
-    <section v-for="section in sections" :key="section.id" class="section">
-      <div class="section-head">
-        <h2>{{ localizedSectionTitle(section) }}</h2>
-        <NuxtLink class="muted" to="/categories">{{ t('viewAll') }}</NuxtLink>
-      </div>
-      <div class="rail">
-        <NuxtLink v-for="d in section.dramas" :key="d.id" :to="`/drama/${d.id}`">
-          <div class="poster" :style="d.cover_url ? { backgroundImage: `url(${d.cover_url})` } : {}">
-            <span v-if="d.is_trending" class="tag">HOT</span>
-          </div>
-          <div class="card-title">{{ d.title }}</div>
-        </NuxtLink>
-      </div>
-    </section>
+    <div v-if="loading" class="boot">
+      <div class="spinner" />
+      <p>Loading...</p>
+    </div>
+    <div v-else-if="errorMsg" class="boot">
+      <p>{{ errorMsg }}</p>
+    </div>
+    <H5VideoFeed v-else :items="feed" @open-series="openSeries" />
   </div>
 </template>
+
+<style scoped>
+.boot {
+  min-height: 100vh;
+  display: grid;
+  place-content: center;
+  gap: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  background: #000;
+  text-align: center;
+}
+.spinner {
+  width: 28px;
+  height: 28px;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #ff7a1a;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>

@@ -24,7 +24,7 @@ watch(user, () => refresh())
 </script>
 
 <template>
-  <div class="container stack">
+  <div class="container stack profile-page">
     <h1>{{ t('personalCenter') }}</h1>
     <template v-if="!user">
       <p class="muted">{{ t('guestTip') }}</p>
@@ -34,7 +34,7 @@ watch(user, () => refresh())
       <div class="card stack" style="background:#121212; border:1px solid #222; border-radius:12px; padding:16px;">
         <div>{{ profile?.email }}</div>
         <div>{{ t('balance') }}: <strong>{{ profile?.coin_balance ?? 0 }}</strong> {{ t('coins') }}</div>
-        <div class="muted">source: {{ profile?.client_source || 'pc' }}</div>
+        <div class="muted">source: {{ profile?.client_source || 'h5' }}</div>
       </div>
       <h2>{{ t('watchHistory') }}</h2>
       <div class="episode-list">
@@ -45,5 +45,17 @@ watch(user, () => refresh())
         <p v-if="!unlocks?.length" class="muted">—</p>
       </div>
     </template>
+    <H5BottomNav active="mine" />
   </div>
 </template>
+
+<style scoped>
+.profile-page {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+}
+</style>
+
