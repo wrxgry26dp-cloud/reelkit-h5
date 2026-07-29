@@ -3,22 +3,26 @@ const props = defineProps<{
   active?: string
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
-const tabs = computed(() => [
-  { key: 'home', label: t('tabHome'), to: '/' },
-  { key: 'theater', label: t('tabTheater'), to: '/theater' },
-  { key: 'mall', label: t('tabMall'), to: '/theater' },
-  { key: 'earn', label: t('tabEarn'), to: '/theater', badge: t('earnBadge') },
-  { key: 'mine', label: t('tabMine'), to: '/profile' },
-])
+const tabs = computed(() => {
+  // depend on locale explicitly so labels always refresh
+  void locale.value
+  return [
+    { key: 'home', label: t('tabHome'), to: '/' },
+    { key: 'theater', label: t('tabTheater'), to: '/theater' },
+    { key: 'mall', label: t('tabMall'), to: '/theater' },
+    { key: 'earn', label: t('tabEarn'), to: '/theater', badge: t('earnBadge') },
+    { key: 'mine', label: t('tabMine'), to: '/profile' },
+  ]
+})
 </script>
 
 <template>
-  <nav class="h5-tabbar" :aria-label="t('tabHome')">
+  <nav :key="locale" class="h5-tabbar" :aria-label="t('tabHome')">
     <NuxtLink
       v-for="tab in tabs"
-      :key="tab.key"
+      :key="`${locale}-${tab.key}`"
       :to="tab.to"
       class="tab"
       :class="{ active: (props.active ?? 'home') === tab.key }"

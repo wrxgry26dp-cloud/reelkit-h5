@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 const client = useSupabaseClient()
 const { t, locale } = useI18n()
 const q = ref('')

@@ -34,6 +34,11 @@ let toastTimer: ReturnType<typeof setTimeout> | null = null
 const liked = computed(() => isLiked(props.item.dramaId))
 const favorited = computed(() => isFavorited(props.item.dramaId))
 
+const META_TAG_RE = /^(fr|pt|ja|es|en|法语|葡语|日语|西语|英语|英文|葡萄牙语|西班牙语|考试短剧)$/i
+const displayTags = computed(() =>
+  (props.item.tags || []).filter(tag => !META_TAG_RE.test(String(tag).trim())),
+)
+
 const isPaid = computed(() => !props.item.isFree)
 const priceLabel = computed(() => {
   const coins = props.item.coinPrice || 0
@@ -273,7 +278,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <article class="feed-item">
+  <article :key="locale" class="feed-item">
     <video
       ref="videoRef"
       class="video"
@@ -355,8 +360,8 @@ onMounted(async () => {
         <span>›</span>
       </button>
 
-      <div v-if="item.tags.length" class="tags">
-        <span v-for="tag in item.tags.slice(0, 3)" :key="tag" class="tag">{{ tag }}</span>
+      <div v-if="displayTags.length" class="tags">
+        <span v-for="tag in displayTags.slice(0, 3)" :key="tag" class="tag">{{ tag }}</span>
         <span v-if="isPaid" class="tag tag-paid">{{ t('paidTag') }}</span>
       </div>
 

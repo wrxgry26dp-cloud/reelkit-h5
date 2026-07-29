@@ -2,7 +2,7 @@
 import type { FeedItem } from '~/types/feed.types'
 
 const { fetchFeed } = useDramaFeed()
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 const feed = ref<FeedItem[]>([])
 const loading = ref(true)
 const errorMsg = ref('')
@@ -42,7 +42,7 @@ function openSeries(item: FeedItem) {
   <div>
     <div v-if="loading" class="boot">
       <div class="spinner" />
-      <p>Loading...</p>
+      <p>{{ t('loading') }}</p>
     </div>
     <div v-else-if="errorMsg" class="boot">
       <p>{{ errorMsg }}</p>

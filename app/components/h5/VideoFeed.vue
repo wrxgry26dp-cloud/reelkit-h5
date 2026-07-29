@@ -12,7 +12,7 @@ const emit = defineEmits<{
 const activeTab = ref<'recommend' | 'hot'>('recommend')
 const activeIndex = ref(0)
 const scrollerRef = ref<HTMLElement | null>(null)
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const visibleItems = computed(() => {
   if (activeTab.value === 'hot') {
@@ -127,11 +127,26 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <H5BottomNav active="home" />
+    <H5BottomNav :key="locale" active="home" />
   </div>
 </template>
 
 <style scoped>
+.topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: calc(8px + env(safe-area-inset-top, 0px)) 8px 8px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent);
+  overflow: visible;
+}
+
 .h5-feed {
   position: relative;
   height: 100dvh;
@@ -143,19 +158,6 @@ onBeforeUnmount(() => {
   color: #fff;
   font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   overscroll-behavior: none;
-}
-
-.topbar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 30;
-  display: grid;
-  grid-template-columns: 44px 1fr 44px;
-  align-items: center;
-  padding: calc(8px + env(safe-area-inset-top, 0px)) 8px 8px;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent);
 }
 
 .icon-btn {

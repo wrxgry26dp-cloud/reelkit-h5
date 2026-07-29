@@ -72,7 +72,7 @@ watch(locale, load)
 
     <p v-if="!loading && !dramas.length" class="hint">{{ t('noDramas') }}</p>
 
-    <H5BottomNav active="theater" />
+    <H5BottomNav :key="locale" active="theater" />
   </div>
 </template>
 

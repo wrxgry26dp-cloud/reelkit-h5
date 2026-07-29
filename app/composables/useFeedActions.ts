@@ -85,6 +85,8 @@ export function useFeedActions() {
   }
 
   return {
+    likedIds,
+    favoritedIds,
     isLiked,
     isFavorited,
     toggleLike,

@@ -39,6 +39,13 @@ const messages: Record<LocaleCode, Record<string, string>> = {
     language: 'Language',
     noVideo: 'No video for this language',
     personalCenter: 'Personal Center',
+    myFavorites: 'Favorites',
+    noFavorites: 'No favorites yet. Save dramas while watching.',
+    noUnlocks: 'No unlocked episodes yet.',
+    displayNameFallback: 'ReelKit User',
+    editProfileSoon: 'Profile editing coming soon',
+    logoutConfirm: 'Sign out of this device?',
+    rechargeSoon: 'Coin top-up coming soon',
     newRelease: 'New Release',
     top: 'TOP',
     noContentForLocale: 'No titles for this language yet.',
@@ -406,17 +413,22 @@ const messages: Record<LocaleCode, Record<string, string>> = {
   },
 }
 
+function isLocaleCode(value: string | null | undefined): value is LocaleCode {
+  return !!value && LOCALES.some(l => l.code === value)
+}
+
 export function useI18n() {
   const locale = useState<LocaleCode>('locale', () => {
     if (import.meta.client) {
-      const saved = localStorage.getItem('reelkit_locale') as LocaleCode | null
-      if (saved && messages[saved]) return saved
+      const saved = localStorage.getItem('reelkit_locale')
+      if (isLocaleCode(saved)) return saved
     }
     return 'en'
   })
 
   const t = (key: string, vars?: Record<string, string | number>) => {
-    let text = messages[locale.value]?.[key] || messages.en[key] || key
+    const dict = messages[locale.value] || messages.en
+    let text = dict[key] || messages.en[key] || key
     if (vars) {
       for (const [k, v] of Object.entries(vars)) {
         text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v))
@@ -426,6 +438,7 @@ export function useI18n() {
   }
 
   function setLocale(code: LocaleCode) {
+    if (!isLocaleCode(code)) return
     locale.value = code
     if (import.meta.client) {
       localStorage.setItem('reelkit_locale', code)
@@ -434,6 +447,11 @@ export function useI18n() {
   }
 
   if (import.meta.client) {
+    // Drop legacy/unsupported values (e.g. zh) so UI never sticks on Chinese hardcodes
+    if (!isLocaleCode(locale.value)) {
+      locale.value = 'en'
+      localStorage.setItem('reelkit_locale', 'en')
+    }
     document.documentElement.lang = locale.value
   }
 

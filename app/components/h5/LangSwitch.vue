@@ -1,71 +1,128 @@
 <script setup lang="ts">
+import type { LocaleCode } from '~/composables/useI18n'
+
 const { locale, setLocale, LOCALES } = useI18n()
 const open = ref(false)
-const rootRef = ref<HTMLElement | null>(null)
+const btnRef = ref<HTMLElement | null>(null)
+const menuStyle = ref<Record<string, string>>({})
 
-const current = computed(() => LOCALES.find(l => l.code === locale.value) || LOCALES[LOCALES.length - 1])
+const current = computed(
+  () => LOCALES.find(l => l.code === locale.value) || LOCALES.find(l => l.code === 'en')!,
+)
 
-function pick(code: typeof LOCALES[number]['code']) {
+function placeMenu() {
+  const rect = btnRef.value?.getBoundingClientRect()
+  if (!rect) return
+  const left = Math.min(
+    Math.max(8, Math.round(rect.left)),
+    Math.max(8, window.innerWidth - 176),
+  )
+  menuStyle.value = {
+    position: 'fixed',
+    top: `${Math.round(rect.bottom + 6)}px`,
+    left: `${left}px`,
+    zIndex: '10000',
+  }
+}
+
+function toggle() {
+  open.value = !open.value
+  if (open.value) nextTick(placeMenu)
+}
+
+function pick(code: LocaleCode) {
   setLocale(code)
   open.value = false
 }
 
-function onDocClick(e: MouseEvent) {
-  if (!rootRef.value?.contains(e.target as Node)) open.value = false
+function onDocPointer(e: Event) {
+  const target = e.target as Node
+  if (btnRef.value?.contains(target)) return
+  if (document.getElementById('h5-lang-menu')?.contains(target)) return
+  open.value = false
 }
 
-onMounted(() => document.addEventListener('click', onDocClick))
-onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
+function onResize() {
+  if (open.value) placeMenu()
+}
+
+onMounted(() => {
+  document.addEventListener('pointerdown', onDocPointer, true)
+  window.addEventListener('resize', onResize)
+  window.addEventListener('scroll', onResize, true)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', onDocPointer, true)
+  window.removeEventListener('resize', onResize)
+  window.removeEventListener('scroll', onResize, true)
+})
 </script>
 
 <template>
-  <div ref="rootRef" class="lang-switch">
+  <div class="lang-switch">
     <button
+      ref="btnRef"
       class="lang-btn"
       type="button"
       :aria-expanded="open"
       aria-haspopup="listbox"
-      @click.stop="open = !open"
+      :aria-label="current.label"
+      @click.stop="toggle"
     >
       <span>{{ current.code.toUpperCase() }}</span>
       <span class="caret" aria-hidden="true" />
     </button>
-    <ul v-if="open" class="lang-menu" role="listbox">
-      <li
-        v-for="l in LOCALES"
-        :key="l.code"
-        role="option"
-        :aria-selected="l.code === locale"
-        :class="{ active: l.code === locale }"
-        @click.stop="pick(l.code)"
+
+    <Teleport to="body">
+      <ul
+        v-if="open"
+        id="h5-lang-menu"
+        class="lang-menu"
+        role="listbox"
+        :style="menuStyle"
       >
-        <span class="code">{{ l.code.toUpperCase() }}</span>
-        <span class="name">{{ l.label }}</span>
-      </li>
-    </ul>
+        <li
+          v-for="l in LOCALES"
+          :key="l.code"
+          role="option"
+          :aria-selected="l.code === locale"
+          :class="{ active: l.code === locale }"
+          @click.stop="pick(l.code)"
+        >
+          <span class="code">{{ l.code.toUpperCase() }}</span>
+          <span class="name">{{ l.label }}</span>
+        </li>
+      </ul>
+    </Teleport>
   </div>
 </template>
 
 <style scoped>
 .lang-switch {
   position: relative;
-  z-index: 40;
+  z-index: 50;
+  flex: 0 0 auto;
 }
 
 .lang-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  min-width: 52px;
   height: 32px;
   padding: 0 10px;
-  border: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.55);
   color: #fff;
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.04em;
   cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .caret {
@@ -77,47 +134,56 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
   margin-top: -3px;
   opacity: 0.85;
 }
+</style>
 
-.lang-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
+<style>
+/* Teleported outside feed overflow — keep height = 5 locales only */
+#h5-lang-menu.lang-menu {
   margin: 0;
   padding: 6px;
   list-style: none;
-  min-width: 148px;
+  width: max-content;
+  min-width: 168px;
+  max-width: min(240px, calc(100vw - 16px));
+  height: auto;
+  max-height: none;
+  overflow: hidden;
   border-radius: 12px;
-  background: rgba(18, 18, 22, 0.96);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(10px);
+  background: #141418;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+  box-sizing: border-box;
 }
 
-.lang-menu li {
+#h5-lang-menu.lang-menu li {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 10px;
+  height: auto;
+  padding: 10px 12px;
   border-radius: 8px;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.82);
+  color: rgba(255, 255, 255, 0.88);
   font-size: 13px;
+  line-height: 1.2;
+  background: transparent;
 }
 
-.lang-menu li:hover,
-.lang-menu li.active {
-  background: rgba(255, 255, 255, 0.1);
+#h5-lang-menu.lang-menu li:hover,
+#h5-lang-menu.lang-menu li.active {
+  background: rgba(238, 39, 55, 0.22);
   color: #fff;
 }
 
-.code {
+#h5-lang-menu.lang-menu .code {
   width: 28px;
+  flex: 0 0 28px;
   font-weight: 800;
   font-size: 11px;
-  opacity: 0.9;
+  letter-spacing: 0.04em;
 }
 
-.name {
+#h5-lang-menu.lang-menu .name {
   white-space: nowrap;
 }
 </style>
